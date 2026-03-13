@@ -1,7 +1,7 @@
 const chromium = require("@sparticuz/chromium");
 const puppeteer = require("puppeteer-core");
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   const { url } = req.query;
 
   if (!url) {
@@ -20,11 +20,7 @@ module.exports = async (req, res) => {
 
     const page = await browser.newPage();
     await page.goto(url, { waitUntil: "networkidle0", timeout: 15000 });
-
-    // Wait for Google Fonts to load
     await page.evaluateHandle("document.fonts.ready");
-
-    // Extra beat for rendering
     await new Promise((r) => setTimeout(r, 1500));
 
     const screenshot = await page.screenshot({
@@ -41,4 +37,4 @@ module.exports = async (req, res) => {
   } finally {
     if (browser) await browser.close();
   }
-};
+}
