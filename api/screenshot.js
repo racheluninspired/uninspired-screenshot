@@ -1,7 +1,7 @@
 const chromium = require("@sparticuz/chromium");
 const puppeteer = require("puppeteer-core");
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   const { url } = req.query;
 
   if (!url) {
@@ -11,8 +11,11 @@ export default async function handler(req, res) {
   let browser = null;
 
   try {
+    chromium.setHeadlessMode = true;
+    chromium.setGraphicsMode = false;
+
     browser = await puppeteer.launch({
-      args: chromium.args,
+      args: [...chromium.args, "--no-sandbox", "--disable-gpu"],
       defaultViewport: { width: 1080, height: 1920 },
       executablePath: await chromium.executablePath(),
       headless: chromium.headless,
@@ -37,4 +40,4 @@ export default async function handler(req, res) {
   } finally {
     if (browser) await browser.close();
   }
-}
+};
