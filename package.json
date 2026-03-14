@@ -1,8 +1,0 @@
-{
-  "name": "uninspired-screenshot",
-  "version": "1.0.0",
-  "private": true,
-  "dependencies": {
-    "@vercel/og": "^0.6.0"
-  }
-}
