@@ -43,6 +43,29 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
 
+    // ── DEBUG MODE: add &debug=1 to see what's happening ──────────
+    if (searchParams.get('debug') === '1') {
+      let fontStatus = 'not attempted';
+      try {
+        const testFetch = await fetch('https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfAZ9hiA.woff2');
+        fontStatus = `status=${testFetch.status}, type=${testFetch.headers.get('content-type')}, ok=${testFetch.ok}`;
+        const buf = await testFetch.arrayBuffer();
+        fontStatus += `, bytes=${buf.byteLength}`;
+      } catch (e) {
+        fontStatus = `FAILED: ${e.message}`;
+      }
+
+      return new Response(
+        JSON.stringify({
+          route: 'working',
+          params: { type: searchParams.get('type'), text: searchParams.get('text'), accent: searchParams.get('accent') },
+          fontFetchTest: fontStatus,
+          timestamp: new Date().toISOString(),
+        }, null, 2),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+
     const type = searchParams.get('type') || 'textpost';
     const text = searchParams.get('text') || 'no text provided';
     const slide = searchParams.get('slide') || '';
