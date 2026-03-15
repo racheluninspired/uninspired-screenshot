@@ -42,6 +42,42 @@ async function loadFonts() {
   return loaded.length > 0 ? loaded : null;
 }
 
+// ── Background image + overlay layers ────────────────────────────────
+// Returns array of JSX elements to prepend inside the root div
+function bgLayers(image, showOverlay) {
+  if (!image) return null;
+  return (
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={image}
+        alt=""
+        width="1080"
+        height="1920"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '1080px',
+          height: '1920px',
+          objectFit: 'cover',
+        }}
+      />
+      {showOverlay ? (
+        <div style={{
+          display: 'flex',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '1080px',
+          height: '1920px',
+          backgroundColor: 'rgba(0,0,0,0.7)',
+        }} />
+      ) : null}
+    </>
+  );
+}
+
 // ── Main GET handler ─────────────────────────────────────────────────
 export async function GET(request) {
   try {
@@ -105,6 +141,8 @@ export async function GET(request) {
     const collection = searchParams.get('collection') || '';
     const design = searchParams.get('design') || '';
     const accent = searchParams.get('accent') || 'green';
+    const image = searchParams.get('image') || '';
+    const overlay = searchParams.get('overlay') !== 'false'; // defaults to true
 
     const accentColor = getAccent(accent);
 
@@ -118,6 +156,9 @@ export async function GET(request) {
     const FM = 'Space Mono';   // Logo, tags, counters
     const FB = 'Inter';        // Body text
 
+    // Background layers (image + optional overlay)
+    const bg = bgLayers(image, overlay);
+
     // ── TEXT POST (short ≤50 chars) ────────────────────────────────
     if (type === 'textpost' && text.length <= 50) {
       return new ImageResponse(
@@ -130,9 +171,11 @@ export async function GET(request) {
             backgroundColor: '#000000',
             position: 'relative',
           }}>
-            <div style={{ display: 'flex', width: '100%', height: '4px', backgroundColor: accentColor }} />
+            {bg}
 
-            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '80px', fontFamily: FM, fontSize: '22px', color: '#1a1a1a' }}>
+            <div style={{ display: 'flex', width: '100%', height: '4px', backgroundColor: accentColor, zIndex: 1 }} />
+
+            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '80px', fontFamily: FM, fontSize: '22px', color: '#1a1a1a', zIndex: 1 }}>
               UNINSPIRED
             </div>
 
@@ -144,6 +187,7 @@ export async function GET(request) {
               flexGrow: 1,
               paddingLeft: '80px',
               paddingRight: '80px',
+              zIndex: 1,
             }}>
               <div style={{
                 display: 'flex',
@@ -165,11 +209,11 @@ export async function GET(request) {
               }} />
             </div>
 
-            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', right: '80px', fontFamily: FM, fontSize: '14px', color: '#1a1a1a' }}>
+            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', right: '80px', fontFamily: FM, fontSize: '14px', color: '#1a1a1a', zIndex: 1 }}>
               @uninspiredcollective
             </div>
 
-            <div style={{ display: 'flex', position: 'absolute', bottom: '0px', left: '0px', width: '100%', height: '2px', backgroundColor: '#111111' }} />
+            <div style={{ display: 'flex', position: 'absolute', bottom: '0px', left: '0px', width: '100%', height: '2px', backgroundColor: '#111111', zIndex: 1 }} />
           </div>
         ),
         imgOpts,
@@ -188,9 +232,11 @@ export async function GET(request) {
             backgroundColor: '#000000',
             position: 'relative',
           }}>
-            <div style={{ display: 'flex', width: '100%', height: '4px', backgroundColor: accentColor }} />
+            {bg}
 
-            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '0px', width: '100%', justifyContent: 'center', fontFamily: FM, fontSize: '22px', color: '#1a1a1a' }}>
+            <div style={{ display: 'flex', width: '100%', height: '4px', backgroundColor: accentColor, zIndex: 1 }} />
+
+            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '0px', width: '100%', justifyContent: 'center', fontFamily: FM, fontSize: '22px', color: '#1a1a1a', zIndex: 1 }}>
               UNINSPIRED
             </div>
 
@@ -202,6 +248,7 @@ export async function GET(request) {
               flexGrow: 1,
               paddingLeft: '100px',
               paddingRight: '100px',
+              zIndex: 1,
             }}>
               <div style={{
                 display: 'flex',
@@ -247,11 +294,11 @@ export async function GET(request) {
               ) : null}
             </div>
 
-            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', left: '0px', width: '100%', justifyContent: 'center', fontFamily: FM, fontSize: '14px', color: '#1a1a1a' }}>
+            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', left: '0px', width: '100%', justifyContent: 'center', fontFamily: FM, fontSize: '14px', color: '#1a1a1a', zIndex: 1 }}>
               @uninspiredcollective
             </div>
 
-            <div style={{ display: 'flex', position: 'absolute', bottom: '0px', left: '0px', width: '100%', height: '2px', backgroundColor: '#111111' }} />
+            <div style={{ display: 'flex', position: 'absolute', bottom: '0px', left: '0px', width: '100%', height: '2px', backgroundColor: '#111111', zIndex: 1 }} />
           </div>
         ),
         imgOpts,
@@ -270,14 +317,16 @@ export async function GET(request) {
             backgroundColor: '#000000',
             position: 'relative',
           }}>
-            <div style={{ display: 'flex', width: '100%', height: '4px', backgroundColor: accentColor }} />
+            {bg}
 
-            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '80px', fontFamily: FM, fontSize: '22px', color: '#333333' }}>
+            <div style={{ display: 'flex', width: '100%', height: '4px', backgroundColor: accentColor, zIndex: 1 }} />
+
+            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '80px', fontFamily: FM, fontSize: '22px', color: '#333333', zIndex: 1 }}>
               UNINSPIRED
             </div>
 
             {slide ? (
-              <div style={{ display: 'flex', position: 'absolute', top: '60px', right: '80px', fontFamily: FM, fontSize: '18px', color: '#222222' }}>
+              <div style={{ display: 'flex', position: 'absolute', top: '60px', right: '80px', fontFamily: FM, fontSize: '18px', color: '#222222', zIndex: 1 }}>
                 {slide} / 5
               </div>
             ) : null}
@@ -290,6 +339,7 @@ export async function GET(request) {
               flexGrow: 1,
               paddingLeft: '80px',
               paddingRight: '80px',
+              zIndex: 1,
             }}>
               <div style={{
                 display: 'flex',
@@ -313,16 +363,16 @@ export async function GET(request) {
             </div>
 
             {collection ? (
-              <div style={{ display: 'flex', position: 'absolute', bottom: '60px', left: '80px', fontFamily: FM, fontSize: '14px', color: '#222222', textTransform: 'uppercase' }}>
+              <div style={{ display: 'flex', position: 'absolute', bottom: '60px', left: '80px', fontFamily: FM, fontSize: '14px', color: '#222222', textTransform: 'uppercase', zIndex: 1 }}>
                 {collection}
               </div>
             ) : null}
 
-            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', right: '80px', fontFamily: FB, fontSize: '14px', color: '#333333' }}>
+            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', right: '80px', fontFamily: FB, fontSize: '14px', color: '#333333', zIndex: 1 }}>
               {String(slide) === '5' ? '@uninspiredcollective' : 'swipe \u2192'}
             </div>
 
-            <div style={{ display: 'flex', position: 'absolute', bottom: '0px', left: '0px', width: '100%', height: '2px', backgroundColor: '#111111' }} />
+            <div style={{ display: 'flex', position: 'absolute', bottom: '0px', left: '0px', width: '100%', height: '2px', backgroundColor: '#111111', zIndex: 1 }} />
           </div>
         ),
         imgOpts,
@@ -341,14 +391,16 @@ export async function GET(request) {
             backgroundColor: '#000000',
             position: 'relative',
           }}>
-            <div style={{ display: 'flex', width: '100%', height: '4px', backgroundColor: accentColor }} />
+            {bg}
 
-            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '80px', fontFamily: FM, fontSize: '22px', color: '#333333' }}>
+            <div style={{ display: 'flex', width: '100%', height: '4px', backgroundColor: accentColor, zIndex: 1 }} />
+
+            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '80px', fontFamily: FM, fontSize: '22px', color: '#333333', zIndex: 1 }}>
               UNINSPIRED
             </div>
 
             {slide ? (
-              <div style={{ display: 'flex', position: 'absolute', top: '60px', right: '80px', fontFamily: FM, fontSize: '18px', color: '#222222' }}>
+              <div style={{ display: 'flex', position: 'absolute', top: '60px', right: '80px', fontFamily: FM, fontSize: '18px', color: '#222222', zIndex: 1 }}>
                 {slide} / 5
               </div>
             ) : null}
@@ -361,6 +413,7 @@ export async function GET(request) {
               flexGrow: 1,
               paddingLeft: '80px',
               paddingRight: '80px',
+              zIndex: 1,
             }}>
               <div style={{
                 display: 'flex',
@@ -382,16 +435,16 @@ export async function GET(request) {
             </div>
 
             {collection ? (
-              <div style={{ display: 'flex', position: 'absolute', bottom: '60px', left: '80px', fontFamily: FM, fontSize: '14px', color: '#222222', textTransform: 'uppercase' }}>
+              <div style={{ display: 'flex', position: 'absolute', bottom: '60px', left: '80px', fontFamily: FM, fontSize: '14px', color: '#222222', textTransform: 'uppercase', zIndex: 1 }}>
                 {collection}
               </div>
             ) : null}
 
-            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', right: '80px', fontFamily: FB, fontSize: '14px', color: '#333333' }}>
+            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', right: '80px', fontFamily: FB, fontSize: '14px', color: '#333333', zIndex: 1 }}>
               {String(slide) === '5' ? '@uninspiredcollective' : 'swipe \u2192'}
             </div>
 
-            <div style={{ display: 'flex', position: 'absolute', bottom: '0px', left: '0px', width: '100%', height: '2px', backgroundColor: '#111111' }} />
+            <div style={{ display: 'flex', position: 'absolute', bottom: '0px', left: '0px', width: '100%', height: '2px', backgroundColor: '#111111', zIndex: 1 }} />
           </div>
         ),
         imgOpts,
@@ -410,14 +463,16 @@ export async function GET(request) {
             backgroundColor: '#000000',
             position: 'relative',
           }}>
-            <div style={{ display: 'flex', width: '100%', height: '4px', backgroundColor: accentColor }} />
+            {bg}
 
-            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '80px', fontFamily: FM, fontSize: '22px', color: '#333333' }}>
+            <div style={{ display: 'flex', width: '100%', height: '4px', backgroundColor: accentColor, zIndex: 1 }} />
+
+            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '80px', fontFamily: FM, fontSize: '22px', color: '#333333', zIndex: 1 }}>
               UNINSPIRED
             </div>
 
             {slide ? (
-              <div style={{ display: 'flex', position: 'absolute', top: '60px', right: '80px', fontFamily: FM, fontSize: '18px', color: '#222222' }}>
+              <div style={{ display: 'flex', position: 'absolute', top: '60px', right: '80px', fontFamily: FM, fontSize: '18px', color: '#222222', zIndex: 1 }}>
                 {slide} / 5
               </div>
             ) : null}
@@ -430,6 +485,7 @@ export async function GET(request) {
               flexGrow: 1,
               paddingLeft: '80px',
               paddingRight: '80px',
+              zIndex: 1,
             }}>
               {design ? (
                 <div style={{
@@ -468,16 +524,16 @@ export async function GET(request) {
             </div>
 
             {collection ? (
-              <div style={{ display: 'flex', position: 'absolute', bottom: '60px', left: '80px', fontFamily: FM, fontSize: '14px', color: '#222222', textTransform: 'uppercase' }}>
+              <div style={{ display: 'flex', position: 'absolute', bottom: '60px', left: '80px', fontFamily: FM, fontSize: '14px', color: '#222222', textTransform: 'uppercase', zIndex: 1 }}>
                 {collection}
               </div>
             ) : null}
 
-            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', right: '80px', fontFamily: FM, fontSize: '14px', color: '#333333' }}>
+            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', right: '80px', fontFamily: FM, fontSize: '14px', color: '#333333', zIndex: 1 }}>
               @uninspiredcollective
             </div>
 
-            <div style={{ display: 'flex', position: 'absolute', bottom: '0px', left: '0px', width: '100%', height: '2px', backgroundColor: '#111111' }} />
+            <div style={{ display: 'flex', position: 'absolute', bottom: '0px', left: '0px', width: '100%', height: '2px', backgroundColor: '#111111', zIndex: 1 }} />
           </div>
         ),
         imgOpts,
