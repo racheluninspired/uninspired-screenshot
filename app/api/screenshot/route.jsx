@@ -2,6 +2,36 @@ import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
 
+// ── Font URLs (Google Fonts CDN, woff2) ──────────────────────────────
+const FONT_URLS = {
+  bebasNeue: 'https://fonts.gstatic.com/s/bebasneue/v14/JTUSjIg69CK48gW7PXoo9Wlhyw.woff2',
+  spaceMono: 'https://fonts.gstatic.com/s/spacemono/v13/i7dPIFZifjKcF5UAWdDRYEF8RQ.woff2',
+  inter: 'https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfAZ9hiA.woff2',
+};
+
+// ── Safe font loader (returns null on failure) ───────────────────────
+async function fetchFont(url, name) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.arrayBuffer();
+    if (!data || data.byteLength === 0) return null;
+    return { name, data, style: 'normal', weight: 400 };
+  } catch {
+    return null;
+  }
+}
+
+async function loadFonts() {
+  const results = await Promise.all([
+    fetchFont(FONT_URLS.bebasNeue, 'Bebas Neue'),
+    fetchFont(FONT_URLS.spaceMono, 'Space Mono'),
+    fetchFont(FONT_URLS.inter, 'Inter'),
+  ]);
+  // Filter out any that failed — Satori falls back to its built-in font
+  return results.filter(Boolean);
+}
+
 // ── Colors ───────────────────────────────────────────────────────────
 const ACCENTS = {
   green: '#D4FF00',
@@ -11,6 +41,11 @@ const ACCENTS = {
 function getAccent(accent) {
   return ACCENTS[accent] || ACCENTS.green;
 }
+
+// ── Font family helpers (fall back gracefully) ───────────────────────
+const F_HEADLINE = 'Bebas Neue';  // Headlines, big text
+const F_MONO = 'Space Mono';      // Logo, tags, counters
+const F_BODY = 'Inter';           // Body text, swipe indicator
 
 // ── Main GET handler ─────────────────────────────────────────────────
 export async function GET(request) {
@@ -25,6 +60,8 @@ export async function GET(request) {
     const accent = searchParams.get('accent') || 'green';
 
     const accentColor = getAccent(accent);
+    const fonts = await loadFonts();
+    const imgOpts = { width: 1080, height: 1920, fonts };
 
     // ── TEXT POST (short ≤50 chars) ────────────────────────────────
     if (type === 'textpost' && text.length <= 50) {
@@ -42,7 +79,7 @@ export async function GET(request) {
             <div style={{ display: 'flex', width: '100%', height: '4px', backgroundColor: accentColor }} />
 
             {/* Logo top-left, barely visible */}
-            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '80px', fontSize: '22px', color: '#1a1a1a' }}>
+            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '80px', fontFamily: F_MONO, fontSize: '22px', color: '#1a1a1a' }}>
               UNINSPIRED
             </div>
 
@@ -58,6 +95,7 @@ export async function GET(request) {
             }}>
               <div style={{
                 display: 'flex',
+                fontFamily: F_HEADLINE,
                 fontSize: '130px',
                 color: '#FFFFFF',
                 lineHeight: 1.05,
@@ -77,7 +115,7 @@ export async function GET(request) {
             </div>
 
             {/* Handle bottom-right, barely visible */}
-            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', right: '80px', fontSize: '14px', color: '#1a1a1a' }}>
+            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', right: '80px', fontFamily: F_MONO, fontSize: '14px', color: '#1a1a1a' }}>
               @uninspiredcollective
             </div>
 
@@ -85,7 +123,7 @@ export async function GET(request) {
             <div style={{ display: 'flex', position: 'absolute', bottom: '0px', left: '0px', width: '100%', height: '2px', backgroundColor: '#111111' }} />
           </div>
         ),
-        { width: 1080, height: 1920 },
+        imgOpts,
       );
     }
 
@@ -105,7 +143,7 @@ export async function GET(request) {
             <div style={{ display: 'flex', width: '100%', height: '4px', backgroundColor: accentColor }} />
 
             {/* Logo centered top, barely visible */}
-            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '0px', width: '100%', justifyContent: 'center', fontSize: '22px', color: '#1a1a1a' }}>
+            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '0px', width: '100%', justifyContent: 'center', fontFamily: F_MONO, fontSize: '22px', color: '#1a1a1a' }}>
               UNINSPIRED
             </div>
 
@@ -122,17 +160,19 @@ export async function GET(request) {
               {/* Giant quotation mark */}
               <div style={{
                 display: 'flex',
+                fontFamily: F_HEADLINE,
                 fontSize: '180px',
                 color: accentColor,
                 lineHeight: 0.6,
                 marginBottom: '20px',
               }}>
-                &ldquo;
+                {'\u201C'}
               </div>
 
               {/* Body text */}
               <div style={{
                 display: 'flex',
+                fontFamily: F_BODY,
                 fontSize: '54px',
                 fontWeight: 300,
                 color: '#E0E0E0',
@@ -155,6 +195,7 @@ export async function GET(request) {
               {collection ? (
                 <div style={{
                   display: 'flex',
+                  fontFamily: F_MONO,
                   fontSize: '14px',
                   color: '#222222',
                   textTransform: 'uppercase',
@@ -166,7 +207,7 @@ export async function GET(request) {
             </div>
 
             {/* Handle centered bottom, barely visible */}
-            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', left: '0px', width: '100%', justifyContent: 'center', fontSize: '14px', color: '#1a1a1a' }}>
+            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', left: '0px', width: '100%', justifyContent: 'center', fontFamily: F_MONO, fontSize: '14px', color: '#1a1a1a' }}>
               @uninspiredcollective
             </div>
 
@@ -174,7 +215,7 @@ export async function GET(request) {
             <div style={{ display: 'flex', position: 'absolute', bottom: '0px', left: '0px', width: '100%', height: '2px', backgroundColor: '#111111' }} />
           </div>
         ),
-        { width: 1080, height: 1920 },
+        imgOpts,
       );
     }
 
@@ -194,13 +235,13 @@ export async function GET(request) {
             <div style={{ display: 'flex', width: '100%', height: '4px', backgroundColor: accentColor }} />
 
             {/* Logo top-left */}
-            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '80px', fontSize: '22px', color: '#333333' }}>
+            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '80px', fontFamily: F_MONO, fontSize: '22px', color: '#333333' }}>
               UNINSPIRED
             </div>
 
             {/* Slide counter top-right */}
             {slide ? (
-              <div style={{ display: 'flex', position: 'absolute', top: '60px', right: '80px', fontSize: '18px', color: '#222222' }}>
+              <div style={{ display: 'flex', position: 'absolute', top: '60px', right: '80px', fontFamily: F_MONO, fontSize: '18px', color: '#222222' }}>
                 {slide} / 5
               </div>
             ) : null}
@@ -217,6 +258,7 @@ export async function GET(request) {
             }}>
               <div style={{
                 display: 'flex',
+                fontFamily: F_HEADLINE,
                 fontSize: '120px',
                 color: '#FFFFFF',
                 lineHeight: 1.05,
@@ -238,13 +280,13 @@ export async function GET(request) {
 
             {/* Collection tag bottom-left */}
             {collection ? (
-              <div style={{ display: 'flex', position: 'absolute', bottom: '60px', left: '80px', fontSize: '14px', color: '#222222', textTransform: 'uppercase' }}>
+              <div style={{ display: 'flex', position: 'absolute', bottom: '60px', left: '80px', fontFamily: F_MONO, fontSize: '14px', color: '#222222', textTransform: 'uppercase' }}>
                 {collection}
               </div>
             ) : null}
 
             {/* Swipe or handle bottom-right */}
-            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', right: '80px', fontSize: '14px', color: '#333333' }}>
+            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', right: '80px', fontFamily: F_BODY, fontSize: '14px', color: '#333333' }}>
               {String(slide) === '5' ? '@uninspiredcollective' : 'swipe \u2192'}
             </div>
 
@@ -252,7 +294,7 @@ export async function GET(request) {
             <div style={{ display: 'flex', position: 'absolute', bottom: '0px', left: '0px', width: '100%', height: '2px', backgroundColor: '#111111' }} />
           </div>
         ),
-        { width: 1080, height: 1920 },
+        imgOpts,
       );
     }
 
@@ -272,13 +314,13 @@ export async function GET(request) {
             <div style={{ display: 'flex', width: '100%', height: '4px', backgroundColor: accentColor }} />
 
             {/* Logo top-left */}
-            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '80px', fontSize: '22px', color: '#333333' }}>
+            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '80px', fontFamily: F_MONO, fontSize: '22px', color: '#333333' }}>
               UNINSPIRED
             </div>
 
             {/* Slide counter top-right */}
             {slide ? (
-              <div style={{ display: 'flex', position: 'absolute', top: '60px', right: '80px', fontSize: '18px', color: '#222222' }}>
+              <div style={{ display: 'flex', position: 'absolute', top: '60px', right: '80px', fontFamily: F_MONO, fontSize: '18px', color: '#222222' }}>
                 {slide} / 5
               </div>
             ) : null}
@@ -304,6 +346,7 @@ export async function GET(request) {
 
               <div style={{
                 display: 'flex',
+                fontFamily: F_BODY,
                 fontSize: '52px',
                 fontWeight: 300,
                 color: '#D0D0D0',
@@ -315,13 +358,13 @@ export async function GET(request) {
 
             {/* Collection tag bottom-left */}
             {collection ? (
-              <div style={{ display: 'flex', position: 'absolute', bottom: '60px', left: '80px', fontSize: '14px', color: '#222222', textTransform: 'uppercase' }}>
+              <div style={{ display: 'flex', position: 'absolute', bottom: '60px', left: '80px', fontFamily: F_MONO, fontSize: '14px', color: '#222222', textTransform: 'uppercase' }}>
                 {collection}
               </div>
             ) : null}
 
             {/* Swipe or handle bottom-right */}
-            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', right: '80px', fontSize: '14px', color: '#333333' }}>
+            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', right: '80px', fontFamily: F_BODY, fontSize: '14px', color: '#333333' }}>
               {String(slide) === '5' ? '@uninspiredcollective' : 'swipe \u2192'}
             </div>
 
@@ -329,7 +372,7 @@ export async function GET(request) {
             <div style={{ display: 'flex', position: 'absolute', bottom: '0px', left: '0px', width: '100%', height: '2px', backgroundColor: '#111111' }} />
           </div>
         ),
-        { width: 1080, height: 1920 },
+        imgOpts,
       );
     }
 
@@ -349,13 +392,13 @@ export async function GET(request) {
             <div style={{ display: 'flex', width: '100%', height: '4px', backgroundColor: accentColor }} />
 
             {/* Logo top-left */}
-            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '80px', fontSize: '22px', color: '#333333' }}>
+            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '80px', fontFamily: F_MONO, fontSize: '22px', color: '#333333' }}>
               UNINSPIRED
             </div>
 
             {/* Slide counter top-right */}
             {slide ? (
-              <div style={{ display: 'flex', position: 'absolute', top: '60px', right: '80px', fontSize: '18px', color: '#222222' }}>
+              <div style={{ display: 'flex', position: 'absolute', top: '60px', right: '80px', fontFamily: F_MONO, fontSize: '18px', color: '#222222' }}>
                 {slide} / 5
               </div>
             ) : null}
@@ -374,6 +417,7 @@ export async function GET(request) {
               {design ? (
                 <div style={{
                   display: 'flex',
+                  fontFamily: F_HEADLINE,
                   fontSize: '140px',
                   color: accentColor,
                   textTransform: 'uppercase',
@@ -397,6 +441,7 @@ export async function GET(request) {
               {/* Closing text */}
               <div style={{
                 display: 'flex',
+                fontFamily: F_BODY,
                 fontSize: '48px',
                 fontWeight: 300,
                 color: '#888888',
@@ -410,13 +455,13 @@ export async function GET(request) {
 
             {/* Collection tag bottom-left */}
             {collection ? (
-              <div style={{ display: 'flex', position: 'absolute', bottom: '60px', left: '80px', fontSize: '14px', color: '#222222', textTransform: 'uppercase' }}>
+              <div style={{ display: 'flex', position: 'absolute', bottom: '60px', left: '80px', fontFamily: F_MONO, fontSize: '14px', color: '#222222', textTransform: 'uppercase' }}>
                 {collection}
               </div>
             ) : null}
 
             {/* Handle bottom-right (always on close) */}
-            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', right: '80px', fontSize: '14px', color: '#333333' }}>
+            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', right: '80px', fontFamily: F_MONO, fontSize: '14px', color: '#333333' }}>
               @uninspiredcollective
             </div>
 
@@ -424,7 +469,7 @@ export async function GET(request) {
             <div style={{ display: 'flex', position: 'absolute', bottom: '0px', left: '0px', width: '100%', height: '2px', backgroundColor: '#111111' }} />
           </div>
         ),
-        { width: 1080, height: 1920 },
+        imgOpts,
       );
     }
 
@@ -444,7 +489,7 @@ export async function GET(request) {
           </div>
         </div>
       ),
-      { width: 1080, height: 1920 },
+      imgOpts,
     );
   } catch (err) {
     // Return error as a visible image so we can debug
@@ -464,7 +509,7 @@ export async function GET(request) {
             ERROR
           </div>
           <div style={{ display: 'flex', fontSize: '32px', color: '#ff8888', textAlign: 'center' }}>
-            {err.message || 'Unknown error'}
+            {String(err.message || err || 'Unknown error')}
           </div>
         </div>
       ),
