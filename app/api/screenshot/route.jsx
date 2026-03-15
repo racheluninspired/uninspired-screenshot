@@ -12,17 +12,34 @@ function getAccent(accent) {
   return ACCENTS[accent] || ACCENTS.green;
 }
 
-// ── Font loading — each font individually, with timeout ──────────────
-async function fetchOneFont(url, name, weight) {
+// ── Font URLs — WOFF format (Satori does NOT support woff2) ──────────
+const FONT_URLS = {
+  bebasNeue: 'https://cdn.jsdelivr.net/npm/@fontsource/bebas-neue@latest/files/bebas-neue-latin-400-normal.woff',
+  spaceMono: 'https://cdn.jsdelivr.net/npm/@fontsource/space-mono@latest/files/space-mono-latin-400-normal.woff',
+  inter: 'https://cdn.jsdelivr.net/npm/@fontsource/inter@latest/files/inter-latin-400-normal.woff',
+};
+
+// ── Font loading ─────────────────────────────────────────────────────
+async function fetchOneFont(url, name) {
   try {
     const res = await fetch(url);
     if (!res.ok) return null;
     const data = await res.arrayBuffer();
     if (!data || data.byteLength === 0) return null;
-    return { name, data, style: 'normal', weight: weight || 400 };
+    return { name, data, style: 'normal', weight: 400 };
   } catch {
     return null;
   }
+}
+
+async function loadFonts() {
+  const results = await Promise.all([
+    fetchOneFont(FONT_URLS.bebasNeue, 'Bebas Neue'),
+    fetchOneFont(FONT_URLS.spaceMono, 'Space Mono'),
+    fetchOneFont(FONT_URLS.inter, 'Inter'),
+  ]);
+  const loaded = results.filter(Boolean);
+  return loaded.length > 0 ? loaded : null;
 }
 
 // ── Main GET handler ─────────────────────────────────────────────────
@@ -32,54 +49,27 @@ export async function GET(request) {
 
     // ── DEBUG: ?debug=1 → JSON diagnostics ──────────────────────
     if (searchParams.get('debug') === '1') {
-      let fontStatus = 'not attempted';
-      try {
-        const testFetch = await fetch('https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfAZ9hiA.woff2');
-        fontStatus = `status=${testFetch.status}, type=${testFetch.headers.get('content-type')}, ok=${testFetch.ok}`;
-        const buf = await testFetch.arrayBuffer();
-        fontStatus += `, bytes=${buf.byteLength}`;
-      } catch (e) {
-        fontStatus = `FAILED: ${e.message}`;
+      const statuses = {};
+      for (const [key, url] of Object.entries(FONT_URLS)) {
+        try {
+          const res = await fetch(url);
+          const buf = await res.arrayBuffer();
+          statuses[key] = `ok=${res.ok}, status=${res.status}, bytes=${buf.byteLength}, type=${res.headers.get('content-type')}`;
+        } catch (e) {
+          statuses[key] = `FAILED: ${e.message}`;
+        }
       }
       return new Response(
-        JSON.stringify({ route: 'working', fontFetchTest: fontStatus, timestamp: new Date().toISOString() }, null, 2),
+        JSON.stringify({ route: 'working', fonts: statuses, timestamp: new Date().toISOString() }, null, 2),
         { status: 200, headers: { 'Content-Type': 'application/json' } },
       );
     }
 
-    // ── FONT TESTS: ?test=bebas|space|inter|all|none ─────────────
-    // These isolate which font is causing the blank image
-    const testMode = searchParams.get('test');
-    if (testMode) {
-      const URLS = {
-        bebas: 'https://fonts.gstatic.com/s/bebasneue/v14/JTUSjIg69CK48gW7PXoo9Wlhyw.woff2',
-        space: 'https://fonts.gstatic.com/s/spacemono/v13/i7dPIFZifjKcF5UAWdDRYEF8RQ.woff2',
-        inter: 'https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfAZ9hiA.woff2',
-      };
-
-      const fonts = [];
-      let label = testMode;
-
-      if (testMode === 'bebas' || testMode === 'all') {
-        const f = await fetchOneFont(URLS.bebas, 'Bebas Neue', 400);
-        if (f) fonts.push(f);
-      }
-      if (testMode === 'space' || testMode === 'all') {
-        const f = await fetchOneFont(URLS.space, 'Space Mono', 400);
-        if (f) fonts.push(f);
-      }
-      if (testMode === 'inter' || testMode === 'all') {
-        const f = await fetchOneFont(URLS.inter, 'Inter', 400);
-        if (f) fonts.push(f);
-      }
-
+    // ── FONT TEST: ?test=1 → minimal image with fonts ───────────
+    if (searchParams.get('test') === '1') {
+      const fonts = await loadFonts();
       const opts = { width: 1080, height: 1920 };
-      if (fonts.length > 0) {
-        opts.fonts = fonts;
-        label += ` (${fonts.length} fonts loaded, ${fonts.map(f => f.name).join('+')})`;
-      } else {
-        label += ' (no fonts / default)';
-      }
+      if (fonts) opts.fonts = fonts;
 
       return new ImageResponse(
         (
@@ -93,14 +83,14 @@ export async function GET(request) {
             justifyContent: 'center',
             padding: '80px',
           }}>
-            <div style={{ display: 'flex', fontSize: '80px', color: '#D4FF00', marginBottom: '40px' }}>
-              FONT TEST
+            <div style={{ display: 'flex', fontSize: '100px', color: '#D4FF00', fontFamily: 'Bebas Neue', marginBottom: '40px' }}>
+              BEBAS NEUE WORKS
             </div>
-            <div style={{ display: 'flex', fontSize: '40px', color: '#ffffff', marginBottom: '20px' }}>
-              {label}
+            <div style={{ display: 'flex', fontSize: '40px', color: '#ffffff', fontFamily: 'Space Mono', marginBottom: '40px' }}>
+              Space Mono works
             </div>
-            <div style={{ display: 'flex', fontSize: '30px', color: '#888888' }}>
-              If you can see this, it works
+            <div style={{ display: 'flex', fontSize: '40px', color: '#888888', fontFamily: 'Inter' }}>
+              Inter works too
             </div>
           </div>
         ),
@@ -108,7 +98,7 @@ export async function GET(request) {
       );
     }
 
-    // ── MAIN ROUTE — working version (no custom fonts for now) ───
+    // ── MAIN ROUTE ───────────────────────────────────────────────
     const type = searchParams.get('type') || 'textpost';
     const text = searchParams.get('text') || 'no text provided';
     const slide = searchParams.get('slide') || '';
@@ -117,7 +107,16 @@ export async function GET(request) {
     const accent = searchParams.get('accent') || 'green';
 
     const accentColor = getAccent(accent);
+
+    // Load fonts (WOFF format — Satori compatible)
+    const loadedFonts = await loadFonts();
     const imgOpts = { width: 1080, height: 1920 };
+    if (loadedFonts) imgOpts.fonts = loadedFonts;
+
+    // Font family constants
+    const FH = 'Bebas Neue';   // Headlines
+    const FM = 'Space Mono';   // Logo, tags, counters
+    const FB = 'Inter';        // Body text
 
     // ── TEXT POST (short ≤50 chars) ────────────────────────────────
     if (type === 'textpost' && text.length <= 50) {
@@ -133,7 +132,7 @@ export async function GET(request) {
           }}>
             <div style={{ display: 'flex', width: '100%', height: '4px', backgroundColor: accentColor }} />
 
-            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '80px', fontSize: '22px', color: '#1a1a1a' }}>
+            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '80px', fontFamily: FM, fontSize: '22px', color: '#1a1a1a' }}>
               UNINSPIRED
             </div>
 
@@ -148,6 +147,7 @@ export async function GET(request) {
             }}>
               <div style={{
                 display: 'flex',
+                fontFamily: FH,
                 fontSize: '130px',
                 color: '#FFFFFF',
                 lineHeight: 1.05,
@@ -165,7 +165,7 @@ export async function GET(request) {
               }} />
             </div>
 
-            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', right: '80px', fontSize: '14px', color: '#1a1a1a' }}>
+            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', right: '80px', fontFamily: FM, fontSize: '14px', color: '#1a1a1a' }}>
               @uninspiredcollective
             </div>
 
@@ -190,7 +190,7 @@ export async function GET(request) {
           }}>
             <div style={{ display: 'flex', width: '100%', height: '4px', backgroundColor: accentColor }} />
 
-            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '0px', width: '100%', justifyContent: 'center', fontSize: '22px', color: '#1a1a1a' }}>
+            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '0px', width: '100%', justifyContent: 'center', fontFamily: FM, fontSize: '22px', color: '#1a1a1a' }}>
               UNINSPIRED
             </div>
 
@@ -205,6 +205,7 @@ export async function GET(request) {
             }}>
               <div style={{
                 display: 'flex',
+                fontFamily: FH,
                 fontSize: '180px',
                 color: accentColor,
                 lineHeight: 0.6,
@@ -215,8 +216,8 @@ export async function GET(request) {
 
               <div style={{
                 display: 'flex',
+                fontFamily: FB,
                 fontSize: '54px',
-                fontWeight: 300,
                 color: '#E0E0E0',
                 textAlign: 'center',
                 lineHeight: 1.4,
@@ -235,6 +236,7 @@ export async function GET(request) {
               {collection ? (
                 <div style={{
                   display: 'flex',
+                  fontFamily: FM,
                   fontSize: '14px',
                   color: '#222222',
                   textTransform: 'uppercase',
@@ -245,7 +247,7 @@ export async function GET(request) {
               ) : null}
             </div>
 
-            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', left: '0px', width: '100%', justifyContent: 'center', fontSize: '14px', color: '#1a1a1a' }}>
+            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', left: '0px', width: '100%', justifyContent: 'center', fontFamily: FM, fontSize: '14px', color: '#1a1a1a' }}>
               @uninspiredcollective
             </div>
 
@@ -270,12 +272,12 @@ export async function GET(request) {
           }}>
             <div style={{ display: 'flex', width: '100%', height: '4px', backgroundColor: accentColor }} />
 
-            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '80px', fontSize: '22px', color: '#333333' }}>
+            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '80px', fontFamily: FM, fontSize: '22px', color: '#333333' }}>
               UNINSPIRED
             </div>
 
             {slide ? (
-              <div style={{ display: 'flex', position: 'absolute', top: '60px', right: '80px', fontSize: '18px', color: '#222222' }}>
+              <div style={{ display: 'flex', position: 'absolute', top: '60px', right: '80px', fontFamily: FM, fontSize: '18px', color: '#222222' }}>
                 {slide} / 5
               </div>
             ) : null}
@@ -291,6 +293,7 @@ export async function GET(request) {
             }}>
               <div style={{
                 display: 'flex',
+                fontFamily: FH,
                 fontSize: '120px',
                 color: '#FFFFFF',
                 lineHeight: 1.05,
@@ -310,12 +313,12 @@ export async function GET(request) {
             </div>
 
             {collection ? (
-              <div style={{ display: 'flex', position: 'absolute', bottom: '60px', left: '80px', fontSize: '14px', color: '#222222', textTransform: 'uppercase' }}>
+              <div style={{ display: 'flex', position: 'absolute', bottom: '60px', left: '80px', fontFamily: FM, fontSize: '14px', color: '#222222', textTransform: 'uppercase' }}>
                 {collection}
               </div>
             ) : null}
 
-            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', right: '80px', fontSize: '14px', color: '#333333' }}>
+            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', right: '80px', fontFamily: FB, fontSize: '14px', color: '#333333' }}>
               {String(slide) === '5' ? '@uninspiredcollective' : 'swipe \u2192'}
             </div>
 
@@ -340,12 +343,12 @@ export async function GET(request) {
           }}>
             <div style={{ display: 'flex', width: '100%', height: '4px', backgroundColor: accentColor }} />
 
-            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '80px', fontSize: '22px', color: '#333333' }}>
+            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '80px', fontFamily: FM, fontSize: '22px', color: '#333333' }}>
               UNINSPIRED
             </div>
 
             {slide ? (
-              <div style={{ display: 'flex', position: 'absolute', top: '60px', right: '80px', fontSize: '18px', color: '#222222' }}>
+              <div style={{ display: 'flex', position: 'absolute', top: '60px', right: '80px', fontFamily: FM, fontSize: '18px', color: '#222222' }}>
                 {slide} / 5
               </div>
             ) : null}
@@ -369,8 +372,8 @@ export async function GET(request) {
 
               <div style={{
                 display: 'flex',
+                fontFamily: FB,
                 fontSize: '52px',
-                fontWeight: 300,
                 color: '#D0D0D0',
                 lineHeight: 1.45,
               }}>
@@ -379,12 +382,12 @@ export async function GET(request) {
             </div>
 
             {collection ? (
-              <div style={{ display: 'flex', position: 'absolute', bottom: '60px', left: '80px', fontSize: '14px', color: '#222222', textTransform: 'uppercase' }}>
+              <div style={{ display: 'flex', position: 'absolute', bottom: '60px', left: '80px', fontFamily: FM, fontSize: '14px', color: '#222222', textTransform: 'uppercase' }}>
                 {collection}
               </div>
             ) : null}
 
-            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', right: '80px', fontSize: '14px', color: '#333333' }}>
+            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', right: '80px', fontFamily: FB, fontSize: '14px', color: '#333333' }}>
               {String(slide) === '5' ? '@uninspiredcollective' : 'swipe \u2192'}
             </div>
 
@@ -409,12 +412,12 @@ export async function GET(request) {
           }}>
             <div style={{ display: 'flex', width: '100%', height: '4px', backgroundColor: accentColor }} />
 
-            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '80px', fontSize: '22px', color: '#333333' }}>
+            <div style={{ display: 'flex', position: 'absolute', top: '60px', left: '80px', fontFamily: FM, fontSize: '22px', color: '#333333' }}>
               UNINSPIRED
             </div>
 
             {slide ? (
-              <div style={{ display: 'flex', position: 'absolute', top: '60px', right: '80px', fontSize: '18px', color: '#222222' }}>
+              <div style={{ display: 'flex', position: 'absolute', top: '60px', right: '80px', fontFamily: FM, fontSize: '18px', color: '#222222' }}>
                 {slide} / 5
               </div>
             ) : null}
@@ -431,6 +434,7 @@ export async function GET(request) {
               {design ? (
                 <div style={{
                   display: 'flex',
+                  fontFamily: FH,
                   fontSize: '140px',
                   color: accentColor,
                   textTransform: 'uppercase',
@@ -452,8 +456,8 @@ export async function GET(request) {
 
               <div style={{
                 display: 'flex',
+                fontFamily: FB,
                 fontSize: '48px',
-                fontWeight: 300,
                 color: '#888888',
                 fontStyle: 'italic',
                 textAlign: 'center',
@@ -464,12 +468,12 @@ export async function GET(request) {
             </div>
 
             {collection ? (
-              <div style={{ display: 'flex', position: 'absolute', bottom: '60px', left: '80px', fontSize: '14px', color: '#222222', textTransform: 'uppercase' }}>
+              <div style={{ display: 'flex', position: 'absolute', bottom: '60px', left: '80px', fontFamily: FM, fontSize: '14px', color: '#222222', textTransform: 'uppercase' }}>
                 {collection}
               </div>
             ) : null}
 
-            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', right: '80px', fontSize: '14px', color: '#333333' }}>
+            <div style={{ display: 'flex', position: 'absolute', bottom: '60px', right: '80px', fontFamily: FM, fontSize: '14px', color: '#333333' }}>
               @uninspiredcollective
             </div>
 
