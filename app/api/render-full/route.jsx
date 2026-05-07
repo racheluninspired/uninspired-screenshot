@@ -1,15 +1,13 @@
-import chromium from '@sparticuz/chromium-min';
-import puppeteer from 'puppeteer-core';
 import { renderNotesDiary } from './templates/notes-diary';
 import { renderTextThread } from './templates/text-thread';
 import { renderSearchBar } from './templates/search-bar';
 import { renderReceipt } from './templates/receipt';
 
-chromium.setHeadlessMode = true;
-chromium.setGraphicsMode = false;
-
 export const runtime = 'nodejs';
 export const maxDuration = 30;
+
+const BROWSERLESS_TOKEN = process.env.BROWSERLESS_TOKEN;
+const BROWSERLESS_URL = 'https://production-sfo.browserless.io';
 
 const TEMPLATES = {
   'notes-diary': renderNotesDiary,
@@ -66,24 +64,31 @@ export async function GET(request) {
 }
 
 async function renderHtmlToImage(html) {
-  let browser = null;
+  if (!BROWSERLESS_TOKEN) {
+    return new Response(JSON.stringify({ error: 'BROWSERLESS_TOKEN env var not set in Vercel' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  }
+
   try {
-    browser = await puppeteer.launch({
-      args: chromium.args,
-      defaultViewport: { width: 1080, height: 1920 },
-      executablePath: await chromium.executablePath('https://github.com/Sparticuz/chromium/releases/download/v131.0.0/chromium-v131.0.0-pack.tar'),
-      headless: chromium.headless,
+    const response = await fetch(`${BROWSERLESS_URL}/screenshot?token=${BROWSERLESS_TOKEN}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
+      body: JSON.stringify({
+        html,
+        viewport: { width: 1080, height: 1920, deviceScaleFactor: 2 },
+        options: { type: 'jpeg', quality: 92, fullPage: false, clip: { x: 0, y: 0, width: 1080, height: 1920 } },
+        gotoOptions: { waitUntil: 'networkidle0', timeout: 15000 },
+        waitForTimeout: 1500,
+      }),
     });
-    const page = await browser.newPage();
-    await page.setViewport({ width: 1080, height: 1920, deviceScaleFactor: 2 });
-    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 15000 });
-    await page.evaluateHandle('document.fonts.ready');
-    await new Promise(r => setTimeout(r, 1500));
-    const screenshot = await page.screenshot({ type: 'jpeg', quality: 92, clip: { x: 0, y: 0, width: 1080, height: 1920 } });
-    return new Response(screenshot, { status: 200, headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': 'public, max-age=86400' } });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      return new Response(JSON.stringify({ error: 'Browserless render failed', status: response.status, detail: errText }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    const buffer = await response.arrayBuffer();
+    return new Response(buffer, { status: 200, headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': 'public, max-age=86400, s-maxage=86400' } });
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message, stack: error.stack }), { status: 500, headers: { 'Content-Type': 'application/json' } });
-  } finally {
-    if (browser) await browser.close();
   }
 }
