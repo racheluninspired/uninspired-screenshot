@@ -320,7 +320,52 @@ export async function GET(request) {
         imgOpts,
       );
     }
+// ── BODY · TIKTOK NATIVE PILL (textstyle=pill) ───────────────────
+    if (type === 'body' && (textstyle === 'pill' || textstyle === 'native')) {
+      const pillLines = text.split(/[\n|]/).map(s => s.trim()).filter(Boolean);
+      return new ImageResponse(
+        (
+          <div style={{
+            display: 'flex', flexDirection: 'column',
+            width: '100%', height: '100%',
+            backgroundColor: '#1a1a1a', position: 'relative',
+          }}>
+            {bgImg}
 
+            <div style={{
+              display: 'flex', flexDirection: 'column',
+              justifyContent: 'center', alignItems: 'center',
+              flexGrow: 1, gap: '12px',
+              paddingLeft: '60px', paddingRight: '60px', zIndex: 5,
+            }}>
+              {pillLines.map((line, i) => (
+                <div key={i} style={{
+                  display: 'flex',
+                  backgroundColor: '#1a1a1a',
+                  color: '#FFFFFF',
+                  padding: '20px 36px',
+                  fontFamily: FB,
+                  fontSize: '72px',
+                  fontWeight: 800,
+                  lineHeight: 1,
+                  letterSpacing: '-0.01em',
+                  borderRadius: '8px',
+                }}>
+                  {line}
+                </div>
+              ))}
+            </div>
+
+            {slideStr ? (
+              <div style={{ display: 'flex', position: 'absolute', bottom: '60px', right: '80px', fontFamily: FM, fontSize: '20px', color: 'rgba(255,255,255,0.7)', letterSpacing: '0.16em', zIndex: 5 }}>
+                {slideStr}
+              </div>
+            ) : null}
+          </div>
+        ),
+        imgOpts,
+      );
+    }
     // ── BODY · IMAGE BG ──────────────────────────────────────────────
     if (type === 'body') {
       return new ImageResponse(
