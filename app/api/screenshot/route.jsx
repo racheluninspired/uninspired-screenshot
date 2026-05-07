@@ -322,7 +322,7 @@ export async function GET(request) {
     }
 // ── BODY · TIKTOK NATIVE PILL (textstyle=pill) ───────────────────
     if (type === 'body' && (textstyle === 'pill' || textstyle === 'native')) {
-      const pillLines = text.split(/[\n|]/).map(s => s.trim()).filter(Boolean);
+      const pillLines = text.split('|').map(s => s.trim()).filter(Boolean);
       return new ImageResponse(
         (
           <div style={{
