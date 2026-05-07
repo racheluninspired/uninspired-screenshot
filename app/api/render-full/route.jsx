@@ -1,9 +1,12 @@
-import chromium from '@sparticuz/chromium';
+import chromium from '@sparticuz/chromium-min';
 import puppeteer from 'puppeteer-core';
 import { renderNotesDiary } from './templates/notes-diary';
 import { renderTextThread } from './templates/text-thread';
 import { renderSearchBar } from './templates/search-bar';
 import { renderReceipt } from './templates/receipt';
+
+chromium.setHeadlessMode = true;
+chromium.setGraphicsMode = false;
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -76,7 +79,9 @@ async function renderHtmlToImage(html) {
     browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: { width: 1080, height: 1920 },
-      executablePath: await chromium.executablePath(),
+      executablePath: await chromium.executablePath(
+        'https://github.com/Sparticuz/chromium/releases/download/v131.0.0/chromium-v131.0.0-pack.tar'
+      ),
       headless: chromium.headless,
     });
 
@@ -119,47 +124,4 @@ const SAMPLES = {
       { text: '"i\'m good."', style: 'normal' },
       { text: '— still loading.', style: 'dim indent' },
       { text: '"i\'m okay."', style: 'normal' },
-      { text: '— filed under drafts.', style: 'dim indent' },
-    ],
-    slide: '02', total: '06',
-  },
-  'text-thread': {
-    contact: '— · — · —',
-    timestamp: 'Today  9:14 PM',
-    bubbles: [
-      { role: 'gray', text: 'you know i love you right' },
-      { role: 'gray', text: 'that\'s why i said it' },
-      { role: 'blue', text: 'words that stick' },
-      { role: 'blue', text: 'just not the way you meant them to' },
-    ],
-    slide: '03', total: '06',
-  },
-  'search-bar': {
-    query: 'why do i feel so',
-    showCursor: true,
-    autocomplete: [
-      { typed: 'why do i feel so', completion: 'tired all the time' },
-      { typed: 'why do i feel so', completion: 'guilty for resting' },
-      { typed: 'why do i feel so', completion: 'much' },
-      { typed: 'why do i feel so disconnected from everyone', dim: true },
-      { typed: 'why do i feel like i\'m too much', dim: true },
-    ],
-    slide: '02', total: '06',
-  },
-  'receipt': {
-    header: '— CONTINUED —',
-    sub: 'UNINSPIRED™ · YOUR WEEK · PAGE 2/3',
-    lines: [
-      { qty: '3×', item: 'Dissociated in Target', price: 'PRICELESS' },
-      { qty: '1×', item: 'Cried in a parking lot', price: '$$$.--' },
-      { qty: '12×', item: 'Scrolled past 2am', price: '$$$.--' },
-      { qty: '5×', item: 'Started a text · never sent', price: '$$$.--' },
-      { qty: '∞', item: 'Emotional Labor', price: '$$$$$' },
-      { qty: '', item: 'SUBTOTAL · INTERIOR', price: '$$$$$', bold: true },
-    ],
-    footer: 'CONTINUED ON SLIDE 04 →',
-    stamp: 'PAID IN\nPRETENDING',
-    slideNum: '03',
-    totalSlides: '06',
-  },
-};
+      { text: '— filed under drafts.', style:
