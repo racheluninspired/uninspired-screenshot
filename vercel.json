@@ -5,7 +5,7 @@
       "maxDuration": 30
     },
     "app/api/render-full/route.jsx": {
-      "memory": 3008,
+      "memory":2048,
       "maxDuration": 30
     }
   }
