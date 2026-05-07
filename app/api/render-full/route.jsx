@@ -87,7 +87,15 @@ async function renderHtmlToImage(html) {
     }
 
     const buffer = await response.arrayBuffer();
-    return new Response(buffer, { status: 200, headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': 'public, max-age=86400, s-maxage=86400' } });
+return new Response(buffer, {
+      status: 200,
+      headers: {
+        'Content-Type': 'image/jpeg',
+        'Content-Length': String(buffer.byteLength),
+        'Cache-Control': 'public, max-age=86400, s-maxage=86400',
+        'Accept-Ranges': 'bytes',
+      },
+    });
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message, stack: error.stack }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
