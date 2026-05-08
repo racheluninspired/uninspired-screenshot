@@ -100,7 +100,7 @@ async function renderHtmlToImage(html) {
 return new Response(buffer, {
       status: 200,
       headers: {
-        'Content-Type': 'image/jpeg',
+        'Content-Type': 'image/png',
         'Content-Length': String(buffer.byteLength),
         'Cache-Control': 'public, max-age=86400, s-maxage=86400',
         'Accept-Ranges': 'bytes',
