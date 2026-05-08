@@ -85,7 +85,7 @@ async function renderHtmlToImage(html) {
       body: JSON.stringify({
         html,
         viewport: { width: 1080, height: 1920, deviceScaleFactor: 2 },
-        options: { type: 'jpeg', quality: 92, fullPage: false, clip: { x: 0, y: 0, width: 1080, height: 1920 } },
+        options: { type: 'png', fullPage: false, clip: { x: 0, y: 0, width: 1080, height: 1920 } },
         gotoOptions: { waitUntil: 'networkidle0', timeout: 15000 },
         waitForTimeout: 1500,
       }),
