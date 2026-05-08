@@ -23,7 +23,17 @@ const SAMPLES = {
   'receipt':     { header: 'ITEMIZED', lines: [{ qty: '3x', item: 'Said im fine', price: '$0.00' }, { qty: '1x', item: 'Cried in parking lot', price: 'PRICELESS' }], footer: 'PAID IN PRETENDING', stamp: 'PAID', slideNum: '03', totalSlides: '06' },
 };
 
+function b64urlDecode(s) {
+  const std = s.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = std + '==='.slice((std.length + 3) % 4);
+  return Buffer.from(padded, 'base64').toString('utf-8');
+}
+
 function paramsFromUrl(searchParams) {
+  const p = searchParams.get('p');
+  if (p) {
+    try { return JSON.parse(b64urlDecode(p)); } catch {}
+  }
   const out = {};
   for (const [key, value] of searchParams.entries()) {
     if (value && (value.startsWith('[') || value.startsWith('{'))) {
