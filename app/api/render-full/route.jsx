@@ -2,6 +2,7 @@ import { renderNotesDiary } from './templates/notes-diary';
 import { renderTextThread } from './templates/text-thread';
 import { renderSearchBar } from './templates/search-bar';
 import { renderReceipt } from './templates/receipt';
+import { renderChatgptTherapy } from './templates/chatgpt-therapy';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -10,17 +11,19 @@ const BROWSERLESS_TOKEN = process.env.BROWSERLESS_TOKEN;
 const BROWSERLESS_URL = 'https://production-sfo.browserless.io';
 
 const TEMPLATES = {
-  'notes-diary': renderNotesDiary,
-  'text-thread': renderTextThread,
-  'search-bar':  renderSearchBar,
-  'receipt':     renderReceipt,
+  'notes-diary':     renderNotesDiary,
+  'text-thread':     renderTextThread,
+  'search-bar':      renderSearchBar,
+  'receipt':         renderReceipt,
+  'chatgpt-therapy': renderChatgptTherapy,
 };
 
 const SAMPLES = {
   'notes-diary': { date: 'tuesday 2:47am', lines: [{ text: 'i am fine', style: 'normal' }, { text: 'wasnt', style: 'dim indent' }], slide: '02', total: '06' },
   'text-thread': { contact: 'DAD', timestamp: 'Today 9:14 PM', bubbles: [{ role: 'gray', text: 'stop being dramatic' }, { role: 'blue', text: 'words that stick' }], slide: '03', total: '06' },
   'search-bar':  { query: 'why do i feel so', showCursor: true, autocomplete: [{ typed: 'why do i feel so', completion: 'tired all the time' }, { typed: 'why do i feel so', completion: 'much' }], slide: '02', total: '06' },
-  'receipt':     { header: 'ITEMIZED', lines: [{ qty: '3x', item: 'Said im fine', price: '$0.00' }, { qty: '1x', item: 'Cried in parking lot', price: 'PRICELESS' }], footer: 'PAID IN PRETENDING', stamp: 'PAID', slideNum: '03', totalSlides: '06' },
+  'receipt':     { header: 'THINGS IM SICK OF HEARING', sub: 'FROM: PEOPLE WHO MEAN WELL', lines: [{ qty: '4x', item: "you're being dramatic", price: '$0.00' }, { qty: '7x', item: 'just stay positive', price: '$0.00' }, { qty: '1x', item: 'have you tried yoga', price: 'PRICELESS' }], total: { item: 'TOTAL DUE', price: 'MY SANITY' }, footer: 'PAID IN PRETENDING', stamp: 'STILL FINE', slideNum: '03', totalSlides: '06' },
+  'chatgpt-therapy': { userMessage: "i told my therapist i was fine for 6 weeks because she seemed tired and i didnt want to add to it", aiResponse: "You were managing the emotional state of the person you were paying to help you process your emotional state. That's not a coincidence — it's a pattern. The instinct to caretake even in a session designed for your care is data.", model: 'ChatGPT 4o', slideNum: '02', totalSlides: '06' },
 };
 
 function b64urlDecode(s) {
@@ -97,13 +100,13 @@ async function renderHtmlToImage(html) {
     }
 
     const buffer = await response.arrayBuffer();
-return new Response(buffer, {
-  status: 200,
-  headers: {
-    'Content-Type': 'image/png',
-    'Cache-Control': 'public, immutable, no-transform, max-age=31536000',
-  },
-});
+    return new Response(buffer, {
+      status: 200,
+      headers: {
+        'Content-Type': 'image/png',
+        'Cache-Control': 'public, immutable, no-transform, max-age=31536000',
+      },
+    });
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message, stack: error.stack }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
